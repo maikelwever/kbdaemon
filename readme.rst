@@ -22,11 +22,12 @@ Make sure you user has rights to access the device. On most systems, this can be
 Usage
 -----
 
-  ./kbdaemon.py --capture <device> (test which events you want to capture)
-                                   (device is for instance event2, which maps to /dev/input/event2)
+Controlling the daemon:
+  ./kbdaemon.py <start|stop>
 
-  ./kbdaemon.py <start|stop>       (control the daemon)
 
+Testing which events you want to capture (device is for instance event2, which maps to /dev/input/event2)
+  ./kbdaemon.py --capture <device>
 
 
 Notes
