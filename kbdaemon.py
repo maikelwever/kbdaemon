@@ -6,6 +6,7 @@
 from daemon import runner
 from os.path import abspath, exists, expanduser
 from os import system
+from select import select
 
 import ConfigParser
 import evdev
@@ -13,7 +14,6 @@ import sys
 
 
 CONFIG_FILE = abspath(expanduser("~/.kbdaemon.ini"))
-
 
 
 class App():
@@ -37,38 +37,44 @@ class App():
                 if event.value == evdev.KeyEvent.key_hold or event.value == evdev.KeyEvent.key_down:
                     print evdev.categorize(event)
 
-
     def main(self):
         parser = ConfigParser.RawConfigParser()
         parser.read(CONFIG_FILE)
 
-        device = None
-        commands = {}
-        exclusive = False
+        devices = {}
 
         for section in parser.sections():
             if not exists(section):
                 raise Exception("Given device {} does not exist (or is not accessible)!".format(section))
 
-            device = section
-            commands = dict(parser.items(section))
+            devices[section] = dict(parser.items(section))
+            """
             if 'exclusive' in commands:
                 if int(commands['exclusive']):
                     exclusive = True
                 del commands['exclusive']
+            """
 
-            break;
+        for device in devices.keys():
+            print "Binding to device: {}".format(device)
 
-        print "Binding to device: {}, {}".format(device, "exclusively" if exclusive else "non-exclusive")
-        dev = evdev.InputDevice(device)
-        for event in dev.read_loop():
-            if event.type == evdev.ecodes.EV_KEY:
-                if event.value == evdev.KeyEvent.key_hold or event.value == evdev.KeyEvent.key_down:
-                    if str(event.code) in commands:
-                        cmd = commands[str(event.code)]
-                        print "Executing {}".format(cmd)
-                        system('sh -c "(cd ~ && {})"'.format(cmd))
+        input_devices = map(evdev.InputDevice, devices.keys())
+        input_devices = {dev.fd: dev for dev in input_devices}
 
+        while True:
+            r, w, x = select(input_devices, [], [])
+            for fd in r:
+                device = input_devices[fd]
+                for event in device.read():
+                    print event
+                    if event.type == evdev.ecodes.EV_KEY:
+                        if event.value == evdev.KeyEvent.key_hold or \
+                                event.value == evdev.KeyEvent.key_down:
+
+                            if str(event.code) in devices[device.fn]:
+                                cmd = devices[device.fn][str(event.code)]
+                                print "Executing {}".format(cmd)
+                                system('sh -c "(cd ~ && {})"'.format(cmd))
 
 
 if __name__ == "__main__":
