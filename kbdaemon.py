@@ -29,13 +29,13 @@ class App():
 
     def debug(self, device):
         dev = evdev.InputDevice("/dev/input/{}".format(device))
-        print "Device chosen:"
-        print dev
+        print("Device chosen:")
+        print(dev)
 
         for event in dev.read_loop():
             if event.type == evdev.ecodes.EV_KEY:
                 if event.value == evdev.KeyEvent.key_hold or event.value == evdev.KeyEvent.key_down:
-                    print evdev.categorize(event)
+                    print(evdev.categorize(event))
 
     def main(self):
         parser = ConfigParser.RawConfigParser()
@@ -56,7 +56,7 @@ class App():
             """
 
         for device in devices.keys():
-            print "Binding to device: {}".format(device)
+            print("Binding to device: {}".format(device))
 
         input_devices = map(evdev.InputDevice, devices.keys())
         input_devices = {dev.fd: dev for dev in input_devices}
@@ -66,15 +66,15 @@ class App():
             for fd in r:
                 device = input_devices[fd]
                 for event in device.read():
-                    print event
+                    print(event)
                     if event.type == evdev.ecodes.EV_KEY:
                         if event.value == evdev.KeyEvent.key_hold or \
                                 event.value == evdev.KeyEvent.key_down:
 
                             if str(event.code) in devices[device.fn]:
                                 cmd = devices[device.fn][str(event.code)]
-                                print "Executing {}".format(cmd)
-                                system('sh -c "(cd ~ && {})"'.format(cmd))
+                                print("Executing {0}".format(cmd))
+                                system('nohup sh -c "(cd ~ && {0})" & disown'.format(cmd))
 
 
 if __name__ == "__main__":
